@@ -138,7 +138,7 @@ def get_times_cached(show_icon):
 def fmt(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
-    return f"{h:02d}:{m:02d}"
+    return f"{h}:{m:02d}"
 
 def fmt_hours(seconds):
     h = int(seconds // 3600)
@@ -176,8 +176,11 @@ try:
     script_path = os.path.abspath(__file__)
     print(f"{toggle_text} | bash='{script_path}' param1=--toggle terminal=false refresh=true")
     
-    print("ActivityWatch öffnen | href=http://localhost:5600")
-    print("Aktualisieren | refresh=true")
+    print("---")
+    print(f"📊 Activity anzeigen | href={BASE_URL}/#/activity/{HOSTNAME}/view/")
+    print(f"📈 Timeline anzeigen | href={BASE_URL}/#/timeline")
+    print(f"⚙️ ActivityWatch Dashboard | href={BASE_URL}")
+    print("🔄 Aktualisieren | refresh=true")
 except Exception as e:
     print("⚠️ Fehler")
     print("---")
