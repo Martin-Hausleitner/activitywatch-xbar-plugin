@@ -87,7 +87,7 @@ try:
     if now.hour < 4:
         now = now - timedelta(days=1)
         
-    is_monday = False # (now.weekday() == 0) - Temporarily disabled for preview
+    is_monday = (now.weekday() == 0)
     
     if is_monday:
         print(f"{fmt(today_secs)}")

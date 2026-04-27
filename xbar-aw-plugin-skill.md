@@ -40,4 +40,4 @@ open /Applications/xbar.app
 Teile dem User nach Abschluss der Installation folgendes mit:
 1. "Das Plugin wurde erfolgreich installiert und **xbar startet ab sofort automatisch beim Systemstart** (Autostart)."
 2. "xbar wurde heruntergeladen und gestartet. Möglicherweise öffnet macOS einen Sicherheitsdialog ('xbar ist eine aus dem Internet geladene App...'). Bitte bestätige diesen mit 'Öffnen'."
-3. "Du solltest jetzt Zahlen in deiner oberen Menüleiste sehen, die deine heutige und wöchentliche aktive Zeit (z.B. `5h35m 6h`) anzeigen. **Smarte Logik:** An einem Montag wird nur die heutige Zeit (`5h35m`) angezeigt, da die Woche frisch beginnt."
+3. "Du solltest jetzt Zahlen in deiner oberen Menüleiste sehen, die deine heutige und wöchentliche aktive Zeit (z.B. `05:38 / 6h`) anzeigen. **Smarte Logik:** An einem Montag wird nur die heutige Zeit (`05:38`) angezeigt, da die Woche frisch beginnt."
