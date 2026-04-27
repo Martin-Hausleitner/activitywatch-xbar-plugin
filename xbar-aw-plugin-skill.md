@@ -14,15 +14,19 @@ git clone https://github.com/Martin-Hausleitner/activitywatch-xbar-plugin.git ~/
 cd ~/Desktop/activitywatch-xbar-plugin
 ```
 
-### 2. Hostname dynamisch prüfen (Optional)
-Prüfe den Hostnamen der ActivityWatch-Instanz des Users, um sicherzustellen, dass die Bucket-Queries funktionieren:
-```bash
-curl -s http://localhost:5600/api/0/info
-```
-*(Falls der Hostname abweicht, ändere die Variable `HOSTNAME` in der Datei `aw-time.10s.py`)*
+### 2. Hostname vollautomatisch ermitteln & patchen (CRITICAL)
+Das Plugin benötigt den exakten Hostnamen des PCs/Macs, um die richtigen Daten aus ActivityWatch zu ziehen und die dynamischen Activity-Links (`#/activity/.../view/`) im Dropdown-Menü korrekt zu generieren.
 
-### 3. Setup-Skript ausführen
-Das Skript erledigt alles Weitere (xbar installieren falls nötig, Plugin-Verzeichnis anlegen, Symlink setzen und **xbar zum macOS Autostart/Login Items hinzufügen**):
+**Als KI-Agent musst du den Hostnamen zwingend automatisch ermitteln und in die Python-Datei eintragen:**
+1. Frage die lokalen Buckets ab, um den echten Namen des Window-Watchers zu finden:
+```bash
+curl -s http://localhost:5600/api/0/buckets | grep -o 'aw-watcher-window_[^"]*' | head -n 1
+```
+2. Extrahiere den Hostnamen (alles nach `aw-watcher-window_`).
+3. Ersetze die Variable `HOSTNAME = "..."` in der Datei `aw-time.10s.py` mit dem gefundenen Hostnamen.
+
+### 3. Setup-Skript ausführen (inkl. Autostart)
+Das beiliegende Setup-Skript erledigt die Installation von `xbar`, erstellt das Plugin-Verzeichnis, setzt den Symlink und **trägt Xbar fest in den macOS-Autostart ein**, sodass die Leiste bei jedem Neustart sofort funktioniert.
 ```bash
 chmod +x install.sh
 ./install.sh
@@ -36,10 +40,13 @@ Falls das Skript `xbar` nicht automatisch starten konnte, starte es manuell:
 open /Applications/xbar.app
 ```
 
-### 5. Dem User Anweisungen geben
+### 5. Dem User die Funktionen & Einstellungen erklären
 Teile dem User nach Abschluss der Installation folgendes mit:
 1. "Das Plugin wurde erfolgreich installiert und **xbar startet ab sofort automatisch beim Systemstart** (Autostart)."
 2. "xbar wurde heruntergeladen und gestartet. Möglicherweise öffnet macOS einen Sicherheitsdialog ('xbar ist eine aus dem Internet geladene App...'). Bitte bestätige diesen mit 'Öffnen'."
-3. "Du solltest jetzt Zahlen in deiner oberen Menüleiste sehen, die deine heutige und wöchentliche aktive Zeit (z.B. `05:38 / 6h`) anzeigen. **Smarte Logik:** An einem Montag wird nur die heutige Zeit (`05:38`) angezeigt, da die Woche frisch beginnt."
-4. "Du hast im Dropdown-Menü des Plugins nun einen Button: **'AFK Status-Icon (Kreis) einblenden'**. Damit kannst du eine schlaue Funktion aktivieren: Wenn du abwesend (AFK) bist, erscheint ein Punkt (`●`) in der Menüleiste. Wenn du aktiv am Rechner bist, verschwindet der Punkt. 
-Ist diese Funktion aktiv, wird die Anzeige alle 10 Sekunden geupdatet. Schaltest du die Funktion aus (es steht nur die Zeit da), wird extrem ressourcenschonend nur alle 2 Minuten geupdatet."
+3. "Du siehst nun eine extrem kompakte Zeit in deiner Menüleiste (z.B. `6:12 / 6h`). **Smarte Logik:** An einem Montag wird nur die heutige Zeit (`6:12`) angezeigt, da die Woche frisch beginnt."
+4. "Im Dropdown-Menü findest du **dynamische Schnellzugriffs-Buttons** (Activity, Timeline, Dashboard), die direkt auf diesen PC/Mac zugeschnitten sind."
+5. "Du hast im Menü außerdem einen **AFK-Button ('AFK Status-Icon einblenden')**:"
+   - **Eingeschaltet:** Das Skript aktualisiert sich live **alle 10 Sekunden**. Bist du am PC aktiv, verschwindet das Icon. Bist du abwesend (AFK), erscheint ein Punkt (`●`).
+   - **Ausgeschaltet (Standard):** Das Skript arbeitet extrem ressourcenschonend mit Cache und aktualisiert sich nur **alle 2 Minuten**. Es wird nie ein AFK-Punkt angezeigt.
+   *(Diese Einstellung wird fest gespeichert und greift auch nach einem Neustart).*
