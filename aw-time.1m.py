@@ -14,6 +14,10 @@ BASE_URL = "http://localhost:5600"
 
 def get_active_seconds():
     now = datetime.now().astimezone()
+    # Check if current time is before 04:00 AM. If so, "today" in AW terms started yesterday.
+    if now.hour < 4:
+        now = now.replace(day=now.day - 1)
+    
     today = now.strftime("%Y-%m-%d")
     
     tz_offset_raw = now.strftime("%z")
@@ -23,15 +27,23 @@ def get_active_seconds():
     else:
         tz_offset = "+00:00"
 
-    start = f"{today}T00:00:00{tz_offset}"
-    end   = f"{today}T23:59:59{tz_offset}"
+    # ActivityWatch default day offset is 04:00
+    start = f"{today}T04:00:00{tz_offset}"
+    
+    # End is 04:00 of the next day
+    # We can just use the current time or a large enough future time, but strictly it's +1 day
+    from datetime import timedelta
+    next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+    end   = f"{next_day}T03:59:59{tz_offset}"
 
     payload = {
         "timeperiods": [f"{start}/{end}"],
         "query": [
+            f'window = query_bucket("aw-watcher-window_{HOSTNAME}");',
             f'afk = query_bucket("aw-watcher-afk_{HOSTNAME}");',
             'not_afk = filter_keyvals(afk, "status", ["not-afk"]);',
-            'duration = sum_durations(not_afk);',
+            'window = filter_period_intersect(window, not_afk);',
+            'duration = sum_durations(window);',
             'RETURN = {"duration": duration};',
         ],
     }
