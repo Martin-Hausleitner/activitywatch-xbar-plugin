@@ -96,8 +96,8 @@ def get_times():
 def get_times_cached(show_icon):
     # Determine cache duration based on AFK icon state
     # If AFK feature is ON, rate limit is 10s (which is the script interval anyway)
-    # If AFK feature is OFF, rate limit is 60s
-    cache_ttl = 10 if show_icon else 60
+    # If AFK feature is OFF, rate limit is 120s (2 minutes)
+    cache_ttl = 10 if show_icon else 120
     
     try:
         if os.path.exists(CACHE_FILE):
@@ -140,13 +140,11 @@ try:
     icon_prefix = ""
     if show_icon:
         afk_status = get_afk_status()
-        if afk_status == "not-afk":
-            icon_prefix = "● " # Active
-        elif afk_status == "afk":
-            icon_prefix = "○ " # Inactive
+        if afk_status == "afk":
+            icon_prefix = "● " # Show dot only when AFK
         else:
-            icon_prefix = "● " # Fallback
-            
+            icon_prefix = ""   # No dot when active
+
     now = datetime.now().astimezone()
     if now.hour < 4:
         now = now - timedelta(days=1)
