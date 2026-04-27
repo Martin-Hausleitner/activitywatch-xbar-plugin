@@ -73,7 +73,7 @@ def get_times():
 def fmt(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
-    return f"{h}h{m:02d}m"
+    return f"{h:02d}:{m:02d}"
 
 def fmt_hours(seconds):
     h = int(seconds // 3600)
@@ -87,12 +87,12 @@ try:
     if now.hour < 4:
         now = now - timedelta(days=1)
         
-    is_monday = (now.weekday() == 0)
+    is_monday = False # (now.weekday() == 0) - Temporarily disabled for preview
     
     if is_monday:
         print(f"{fmt(today_secs)}")
     else:
-        print(f"{fmt(today_secs)} {fmt_hours(week_secs)}")
+        print(f"{fmt(today_secs)} / {fmt_hours(week_secs)}")
         
     print("---")
     print(f"Heute: {fmt(today_secs)}")
