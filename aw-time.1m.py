@@ -52,6 +52,17 @@ def query_duration(start_str, end_str, tz_offset):
         return result[0]["duration"]
     return 0
 
+def get_afk_status():
+    try:
+        req = urllib.request.Request(f"{BASE_URL}/api/0/buckets/aw-watcher-afk_{HOSTNAME}/events?limit=1")
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read())
+            if data and len(data) > 0:
+                return data[0].get("data", {}).get("status", "unknown")
+    except:
+        pass
+    return "unknown"
+
 def get_times():
     now = datetime.now().astimezone()
     
@@ -93,8 +104,16 @@ try:
     today_secs, week_secs = get_times()
     show_icon = get_icon_state()
     
-    icon_prefix = "● " if show_icon else ""
-    
+    icon_prefix = ""
+    if show_icon:
+        afk_status = get_afk_status()
+        if afk_status == "not-afk":
+            icon_prefix = "● " # Active
+        elif afk_status == "afk":
+            icon_prefix = "○ " # Inactive
+        else:
+            icon_prefix = "● " # Fallback
+            
     now = datetime.now().astimezone()
     if now.hour < 4:
         now = now - timedelta(days=1)
@@ -112,7 +131,7 @@ try:
     print("---")
     
     toggle_val = "0" if show_icon else "1"
-    toggle_text = "Icon ausblenden" if show_icon else "Icon als Kreis einblenden"
+    toggle_text = "AFK Status-Icon ausblenden" if show_icon else "AFK Status-Icon (Kreis) einblenden"
     # Button to toggle icon
     print(f"{toggle_text} | bash='echo {toggle_val} > {STATE_FILE}' terminal=false refresh=true")
     
