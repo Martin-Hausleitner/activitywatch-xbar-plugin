@@ -15,15 +15,17 @@ cd ~/Desktop/activitywatch-xbar-plugin
 ```
 
 ### 2. Hostname vollautomatisch ermitteln & patchen (CRITICAL)
-Das Plugin benötigt den exakten Hostnamen des PCs/Macs, um die richtigen Daten aus ActivityWatch zu ziehen und die dynamischen Activity-Links (`#/activity/.../view/`) im Dropdown-Menü korrekt zu generieren.
+Das Plugin benötigt den exakten Hostnamen des PCs/Macs, um die richtigen Daten aus ActivityWatch zu ziehen und die dynamischen Activity-Links im Dropdown-Menü korrekt zu generieren.
+
+**EXTREM WICHTIG:** Die Route zur Activity-Ansicht im Menü (`http://localhost:5600/#/activity/<HOSTNAME>/view/`) **muss** den exakten Rechnernamen (z.B. `MHs-MacBook-Pro.local` oder PC-Name) enthalten, ansonsten landet der User auf einer leeren oder fehlerhaften ActivityWatch-Seite! Die Timeline hingegen ist identisch (`#/timeline`).
 
 **Als KI-Agent musst du den Hostnamen zwingend automatisch ermitteln und in die Python-Datei eintragen:**
 1. Frage die lokalen Buckets ab, um den echten Namen des Window-Watchers zu finden:
 ```bash
 curl -s http://localhost:5600/api/0/buckets | grep -o 'aw-watcher-window_[^"]*' | head -n 1
 ```
-2. Extrahiere den Hostnamen (alles nach `aw-watcher-window_`).
-3. Ersetze die Variable `HOSTNAME = "..."` in der Datei `aw-time.10s.py` mit dem gefundenen Hostnamen.
+2. Extrahiere den Hostnamen (alles exakt nach dem String `aw-watcher-window_`).
+3. Ersetze die Variable `HOSTNAME = "..."` in der Datei `aw-time.10s.py` exakt mit dem gefundenen Hostnamen. Das stellt sicher, dass das Skript die Activity-URL (`href={BASE_URL}/#/activity/{HOSTNAME}/view/`) absolut fehlerfrei aufbaut.
 
 ### 3. Setup-Skript ausführen (inkl. Autostart)
 Das beiliegende Setup-Skript erledigt die Installation von `xbar`, erstellt das Plugin-Verzeichnis, setzt den Symlink und **trägt Xbar fest in den macOS-Autostart ein**, sodass die Leiste bei jedem Neustart sofort funktioniert.
