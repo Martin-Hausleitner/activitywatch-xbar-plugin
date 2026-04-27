@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # <xbar.title>ActivityWatch Active Time</xbar.title>
 # <xbar.version>v1.1</xbar.version>
@@ -73,22 +73,22 @@ def get_times():
 def fmt(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
-    return f"{h}h {m:02d}m"
+    return f"{h}h{m:02d}m"
 
 try:
     today_secs, week_secs = get_times()
     
-    # Compact Display in Menu Bar
-    print(f"⏱ {fmt(today_secs)} | W: {fmt(week_secs)}")
+    # Compact Display in Menu Bar with Icons
+    print(f"☀️{fmt(today_secs)} 📅{fmt(week_secs)}")
     print("---")
-    print(f"Heute aktiv: {fmt(today_secs)}")
-    print(f"Diese Woche: {fmt(week_secs)}")
+    print(f"☀️ Heute: {fmt(today_secs)}")
+    print(f"📅 Woche: {fmt(week_secs)}")
     print("---")
     print("ActivityWatch öffnen | href=http://localhost:5600")
     print("Aktualisieren | refresh=true")
 except Exception as e:
-    print("⏱ –")
+    print("⚠️ Fehler")
     print("---")
-    print("ActivityWatch nicht erreichbar")
-    print(f"Fehler: {e}")
+    print("ActivityWatch nicht erreichbar oder interner Fehler")
+    print(f"Details: {e}")
     print("Retry | refresh=true")
