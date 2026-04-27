@@ -2,7 +2,7 @@
 set -e
 
 PLUGIN_DIR="$HOME/Library/Application Support/xbar/plugins"
-SCRIPT_NAME="aw-time.1m.py"
+SCRIPT_NAME="aw-time.10s.py"
 SCRIPT_PATH="$(pwd)/$SCRIPT_NAME"
 
 echo "Einrichten des ActivityWatch xbar Plugins..."
@@ -26,6 +26,9 @@ if [ -L "$TARGET_LINK" ] || [ -e "$TARGET_LINK" ]; then
     echo "Entferne alten Link/Datei: $TARGET_LINK"
     rm "$TARGET_LINK"
 fi
+
+# Remove old 1m script if present
+rm -f "$PLUGIN_DIR/aw-time.1m.py"
 
 echo "Erstelle Symlink in xbar Plugin-Verzeichnis..."
 ln -s "$SCRIPT_PATH" "$TARGET_LINK"

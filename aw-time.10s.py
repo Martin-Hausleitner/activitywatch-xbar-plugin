@@ -3,16 +3,18 @@
 # <xbar.title>ActivityWatch Active Time</xbar.title>
 # <xbar.version>v1.2</xbar.version>
 # <xbar.desc>Shows today's and this week's active time from ActivityWatch</xbar.desc>
-# <xbar.refreshInterval>60s</xbar.refreshInterval>
+# <xbar.refreshInterval>10s</xbar.refreshInterval>
 
 import json
 import urllib.request
 import os
+import time
 from datetime import datetime, timedelta
 
 HOSTNAME = "MHs-MacBook-Pro.local"
 BASE_URL = "http://localhost:5600"
 STATE_FILE = os.path.expanduser("~/.aw_xbar_icon_state")
+CACHE_FILE = os.path.expanduser("~/.aw_xbar_cache.json")
 
 def get_icon_state():
     if os.path.exists(STATE_FILE):
@@ -91,6 +93,37 @@ def get_times():
     
     return today_secs, week_secs
 
+def get_times_cached(show_icon):
+    # Determine cache duration based on AFK icon state
+    # If AFK feature is ON, rate limit is 10s (which is the script interval anyway)
+    # If AFK feature is OFF, rate limit is 60s
+    cache_ttl = 10 if show_icon else 60
+    
+    try:
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, "r") as f:
+                cache_data = json.load(f)
+                if time.time() - cache_data.get("timestamp", 0) < cache_ttl:
+                    return cache_data.get("today_secs", 0), cache_data.get("week_secs", 0)
+    except:
+        pass
+
+    # Fetch new data
+    today_secs, week_secs = get_times()
+    
+    # Save to cache
+    try:
+        with open(CACHE_FILE, "w") as f:
+            json.dump({
+                "timestamp": time.time(),
+                "today_secs": today_secs,
+                "week_secs": week_secs
+            }, f)
+    except:
+        pass
+        
+    return today_secs, week_secs
+
 def fmt(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
@@ -101,8 +134,8 @@ def fmt_hours(seconds):
     return f"{h}h"
 
 try:
-    today_secs, week_secs = get_times()
     show_icon = get_icon_state()
+    today_secs, week_secs = get_times_cached(show_icon)
     
     icon_prefix = ""
     if show_icon:

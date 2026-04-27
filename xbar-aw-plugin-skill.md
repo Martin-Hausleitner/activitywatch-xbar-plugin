@@ -19,7 +19,7 @@ Prüfe den Hostnamen der ActivityWatch-Instanz des Users, um sicherzustellen, da
 ```bash
 curl -s http://localhost:5600/api/0/info
 ```
-*(Falls der Hostname abweicht, ändere die Variable `HOSTNAME` in der Datei `aw-time.1m.py`)*
+*(Falls der Hostname abweicht, ändere die Variable `HOSTNAME` in der Datei `aw-time.10s.py`)*
 
 ### 3. Setup-Skript ausführen
 Das Skript erledigt alles Weitere (xbar installieren falls nötig, Plugin-Verzeichnis anlegen, Symlink setzen und **xbar zum macOS Autostart/Login Items hinzufügen**):
