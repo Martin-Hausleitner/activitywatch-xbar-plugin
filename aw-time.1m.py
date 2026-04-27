@@ -1,16 +1,27 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # <xbar.title>ActivityWatch Active Time</xbar.title>
-# <xbar.version>v1.1</xbar.version>
+# <xbar.version>v1.2</xbar.version>
 # <xbar.desc>Shows today's and this week's active time from ActivityWatch</xbar.desc>
 # <xbar.refreshInterval>60s</xbar.refreshInterval>
 
 import json
 import urllib.request
+import os
 from datetime import datetime, timedelta
 
 HOSTNAME = "MHs-MacBook-Pro.local"
 BASE_URL = "http://localhost:5600"
+STATE_FILE = os.path.expanduser("~/.aw_xbar_icon_state")
+
+def get_icon_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                return f.read().strip() == "1"
+        except:
+            pass
+    return False
 
 def query_duration(start_str, end_str, tz_offset):
     start = f"{start_str}T04:00:00{tz_offset}"
@@ -44,12 +55,11 @@ def query_duration(start_str, end_str, tz_offset):
 def get_times():
     now = datetime.now().astimezone()
     
-    # Check if current time is before 04:00 AM. If so, "today" in AW terms started yesterday.
+    # Check if current time is before 04:00 AM
     if now.hour < 4:
         now = now - timedelta(days=1)
     
     tz_offset_raw = now.strftime("%z")
-    # Convert "+0200" to "+02:00"
     if tz_offset_raw:
         tz_offset = f"{tz_offset_raw[:3]}:{tz_offset_raw[3:]}"
     else:
@@ -81,8 +91,10 @@ def fmt_hours(seconds):
 
 try:
     today_secs, week_secs = get_times()
+    show_icon = get_icon_state()
     
-    # Hide weekly hours if today is Monday (0)
+    icon_prefix = "● " if show_icon else ""
+    
     now = datetime.now().astimezone()
     if now.hour < 4:
         now = now - timedelta(days=1)
@@ -90,14 +102,20 @@ try:
     is_monday = (now.weekday() == 0)
     
     if is_monday:
-        print(f"{fmt(today_secs)}")
+        print(f"{icon_prefix}{fmt(today_secs)}")
     else:
-        print(f"{fmt(today_secs)} / {fmt_hours(week_secs)}")
+        print(f"{icon_prefix}{fmt(today_secs)} / {fmt_hours(week_secs)}")
         
     print("---")
     print(f"Heute: {fmt(today_secs)}")
     print(f"Woche: {fmt(week_secs)}")
     print("---")
+    
+    toggle_val = "0" if show_icon else "1"
+    toggle_text = "Icon ausblenden" if show_icon else "Icon als Kreis einblenden"
+    # Button to toggle icon
+    print(f"{toggle_text} | bash='echo {toggle_val} > {STATE_FILE}' terminal=false refresh=true")
+    
     print("ActivityWatch öffnen | href=http://localhost:5600")
     print("Aktualisieren | refresh=true")
 except Exception as e:
