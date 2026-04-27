@@ -75,11 +75,15 @@ def fmt(seconds):
     m = int((seconds % 3600) // 60)
     return f"{h}h{m:02d}m"
 
+def fmt_hours(seconds):
+    h = int(seconds // 3600)
+    return f"{h}h"
+
 try:
     today_secs, week_secs = get_times()
     
-    # Compact Display in Menu Bar with Icons
-    print(f"☀️{fmt(today_secs)} 📅{fmt(week_secs)}")
+    # Compact Display in Menu Bar with Icons and smaller font size
+    print(f"☀️{fmt(today_secs)} 📅{fmt_hours(week_secs)} | size=12")
     print("---")
     print(f"☀️ Heute: {fmt(today_secs)}")
     print(f"📅 Woche: {fmt(week_secs)}")
