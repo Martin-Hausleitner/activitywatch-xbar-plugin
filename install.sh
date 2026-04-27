@@ -32,4 +32,4 @@ ln -s "$SCRIPT_PATH" "$TARGET_LINK"
 
 echo "Erfolgreich installiert!"
 echo "Starte xbar neu..."
-open -a xbar || echo "Bitte xbar manuell starten."
+open /Applications/xbar.app || echo "Bitte xbar manuell starten."
