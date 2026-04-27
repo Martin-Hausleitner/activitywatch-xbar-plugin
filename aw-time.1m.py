@@ -82,11 +82,21 @@ def fmt_hours(seconds):
 try:
     today_secs, week_secs = get_times()
     
-    # Compact Display in Menu Bar with Icons and smaller font size
-    print(f"☀️{fmt(today_secs)} 📅{fmt_hours(week_secs)} | size=12")
+    # Hide weekly hours if today is Monday (0)
+    now = datetime.now().astimezone()
+    if now.hour < 4:
+        now = now - timedelta(days=1)
+        
+    is_monday = (now.weekday() == 0)
+    
+    if is_monday:
+        print(f"{fmt(today_secs)} | size=12")
+    else:
+        print(f"{fmt(today_secs)} {fmt_hours(week_secs)} | size=12")
+        
     print("---")
-    print(f"☀️ Heute: {fmt(today_secs)}")
-    print(f"📅 Woche: {fmt(week_secs)}")
+    print(f"Heute: {fmt(today_secs)}")
+    print(f"Woche: {fmt(week_secs)}")
     print("---")
     print("ActivityWatch öffnen | href=http://localhost:5600")
     print("Aktualisieren | refresh=true")

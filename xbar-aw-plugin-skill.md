@@ -22,13 +22,13 @@ curl -s http://localhost:5600/api/0/info
 *(Falls der Hostname abweicht, ändere die Variable `HOSTNAME` in der Datei `aw-time.1m.py`)*
 
 ### 3. Setup-Skript ausführen
-Das Skript erledigt alles Weitere (xbar installieren falls nötig, Plugin-Verzeichnis anlegen, Symlink setzen):
+Das Skript erledigt alles Weitere (xbar installieren falls nötig, Plugin-Verzeichnis anlegen, Symlink setzen und **xbar zum macOS Autostart/Login Items hinzufügen**):
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-*(Hinweis: Der Befehl `./install.sh` erfordert eventuell User-Approval, da xbar über Homebrew installiert wird. Warte den Abschluss der Installation ab.)*
+*(Hinweis: Der Befehl `./install.sh` erfordert eventuell User-Approval, da xbar über Homebrew installiert wird und via AppleScript in den Autostart eingetragen wird. Warte den Abschluss der Installation ab.)*
 
 ### 4. xbar starten
 Falls das Skript `xbar` nicht automatisch starten konnte, starte es manuell:
@@ -38,6 +38,6 @@ open /Applications/xbar.app
 
 ### 5. Dem User Anweisungen geben
 Teile dem User nach Abschluss der Installation folgendes mit:
-1. "Das Plugin wurde erfolgreich installiert!"
+1. "Das Plugin wurde erfolgreich installiert und **xbar startet ab sofort automatisch beim Systemstart** (Autostart)."
 2. "xbar wurde heruntergeladen und gestartet. Möglicherweise öffnet macOS einen Sicherheitsdialog ('xbar ist eine aus dem Internet geladene App...'). Bitte bestätige diesen mit 'Öffnen'."
-3. "Du solltest jetzt ein kleines ⏱-Symbol in deiner oberen Menüleiste sehen, das deine heutige aktive Zeit (ab 04:00 Uhr morgens berechnet) anzeigt."
+3. "Du solltest jetzt Zahlen in deiner oberen Menüleiste sehen, die deine heutige und wöchentliche aktive Zeit (z.B. `5h35m 6h`) anzeigen. **Smarte Logik:** An einem Montag wird nur die heutige Zeit (`5h35m`) angezeigt, da die Woche frisch beginnt."

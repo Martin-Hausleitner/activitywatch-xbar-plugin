@@ -30,6 +30,9 @@ fi
 echo "Erstelle Symlink in xbar Plugin-Verzeichnis..."
 ln -s "$SCRIPT_PATH" "$TARGET_LINK"
 
+echo "Füge xbar zum macOS Autostart hinzu..."
+osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/xbar.app", hidden:false}' >/dev/null 2>&1 || echo "Autostart konnte nicht automatisch eingerichtet werden."
+
 echo "Erfolgreich installiert!"
 echo "Starte xbar neu..."
 open /Applications/xbar.app || echo "Bitte xbar manuell starten."
