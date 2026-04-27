@@ -1,41 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # <xbar.title>ActivityWatch Active Time</xbar.title>
-# <xbar.version>v1.0</xbar.version>
-# <xbar.desc>Shows today's active time from ActivityWatch</xbar.desc>
+# <xbar.version>v1.1</xbar.version>
+# <xbar.desc>Shows today's and this week's active time from ActivityWatch</xbar.desc>
 # <xbar.refreshInterval>60s</xbar.refreshInterval>
 
 import json
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 
 HOSTNAME = "MHs-MacBook-Pro.local"
 BASE_URL = "http://localhost:5600"
 
-def get_active_seconds():
-    now = datetime.now().astimezone()
-    # Check if current time is before 04:00 AM. If so, "today" in AW terms started yesterday.
-    if now.hour < 4:
-        now = now.replace(day=now.day - 1)
+def query_duration(start_str, end_str, tz_offset):
+    start = f"{start_str}T04:00:00{tz_offset}"
+    end   = f"{end_str}T03:59:59{tz_offset}"
     
-    today = now.strftime("%Y-%m-%d")
-    
-    tz_offset_raw = now.strftime("%z")
-    # Convert "+0200" to "+02:00"
-    if tz_offset_raw:
-        tz_offset = f"{tz_offset_raw[:3]}:{tz_offset_raw[3:]}"
-    else:
-        tz_offset = "+00:00"
-
-    # ActivityWatch default day offset is 04:00
-    start = f"{today}T04:00:00{tz_offset}"
-    
-    # End is 04:00 of the next day
-    # We can just use the current time or a large enough future time, but strictly it's +1 day
-    from datetime import timedelta
-    next_day = (now + timedelta(days=1)).strftime("%Y-%m-%d")
-    end   = f"{next_day}T03:59:59{tz_offset}"
-
     payload = {
         "timeperiods": [f"{start}/{end}"],
         "query": [
@@ -61,16 +41,49 @@ def get_active_seconds():
         return result[0]["duration"]
     return 0
 
+def get_times():
+    now = datetime.now().astimezone()
+    
+    # Check if current time is before 04:00 AM. If so, "today" in AW terms started yesterday.
+    if now.hour < 4:
+        now = now - timedelta(days=1)
+    
+    tz_offset_raw = now.strftime("%z")
+    # Convert "+0200" to "+02:00"
+    if tz_offset_raw:
+        tz_offset = f"{tz_offset_raw[:3]}:{tz_offset_raw[3:]}"
+    else:
+        tz_offset = "+00:00"
+
+    # Today
+    today_str = now.strftime("%Y-%m-%d")
+    next_day_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # This Week (Monday = 0)
+    days_since_monday = now.weekday()
+    monday = now - timedelta(days=days_since_monday)
+    monday_str = monday.strftime("%Y-%m-%d")
+    next_monday_str = (monday + timedelta(days=7)).strftime("%Y-%m-%d")
+    
+    today_secs = query_duration(today_str, next_day_str, tz_offset)
+    week_secs = query_duration(monday_str, next_monday_str, tz_offset)
+    
+    return today_secs, week_secs
+
 def fmt(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     return f"{h}h {m:02d}m"
 
 try:
-    secs = get_active_seconds()
-    print(f"⏱ {fmt(secs)}")
+    today_secs, week_secs = get_times()
+    
+    # Compact Display in Menu Bar
+    print(f"⏱ {fmt(today_secs)} | W: {fmt(week_secs)}")
     print("---")
-    print(f"Heute aktiv: {fmt(secs)}")
+    print(f"Heute aktiv: {fmt(today_secs)}")
+    print(f"Diese Woche: {fmt(week_secs)}")
+    print("---")
     print("ActivityWatch öffnen | href=http://localhost:5600")
     print("Aktualisieren | refresh=true")
 except Exception as e:
