@@ -9,6 +9,7 @@ import json
 import urllib.request
 import os
 import time
+import sys
 from datetime import datetime, timedelta
 
 HOSTNAME = "MHs-MacBook-Pro.local"
@@ -24,6 +25,16 @@ def get_icon_state():
         except:
             pass
     return False
+
+if len(sys.argv) > 1 and sys.argv[1] == "--toggle":
+    current_state = get_icon_state()
+    new_val = "0" if current_state else "1"
+    try:
+        with open(STATE_FILE, "w") as f:
+            f.write(new_val)
+    except:
+        pass
+    sys.exit(0)
 
 def query_duration(start_str, end_str, tz_offset):
     start = f"{start_str}T04:00:00{tz_offset}"
@@ -161,10 +172,9 @@ try:
     print(f"Woche: {fmt(week_secs)}")
     print("---")
     
-    toggle_val = "0" if show_icon else "1"
-    toggle_text = "AFK Status-Icon ausblenden" if show_icon else "AFK Status-Icon (Kreis) einblenden"
-    # Button to toggle icon
-    print(f"{toggle_text} | bash='echo {toggle_val} > {STATE_FILE}' terminal=false refresh=true")
+    toggle_text = "✅ AFK-Feature aktiv (Klicken zum Deaktivieren)" if show_icon else "❌ AFK-Feature inaktiv (Klicken zum Aktivieren)"
+    script_path = os.path.abspath(__file__)
+    print(f"{toggle_text} | bash='{script_path}' param1=--toggle terminal=false refresh=true")
     
     print("ActivityWatch öffnen | href=http://localhost:5600")
     print("Aktualisieren | refresh=true")
