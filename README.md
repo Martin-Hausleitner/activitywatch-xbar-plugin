@@ -26,3 +26,8 @@ Dies führt folgende Schritte durch:
 ## Funktion
 Das Skript nutzt die REST API von ActivityWatch, um die Dauer der Aktivität des aktuellen Tages und der Woche auszulesen.
 Das Intervall der Aktualisierung ist **10 Sekunden** (`.10s.py`), drosselt sich aber intelligent auf **2 Minuten**, wenn das Live-AFK-Feature ausgeschaltet ist.
+
+Im Dropdown-Menü gibt es direkte Buttons zum Starten und Stoppen von ActivityWatch.
+Darunter zeigt das Plugin zusätzliche Statistiken wie Monatsgesamtzeit,
+Monatsdurchschnitt pro Tag, die aktuelle Woche, die letzten Wochen und den
+4-Wochen-Schnitt.

@@ -1,0 +1,51 @@
+import importlib.util
+import pathlib
+import unittest
+from datetime import datetime
+
+
+SCRIPT = pathlib.Path(__file__).with_name("aw-time.10s.py")
+
+
+def load_plugin():
+    spec = importlib.util.spec_from_file_location("aw_time_plugin", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class PluginMenuTests(unittest.TestCase):
+    def test_dropdown_contains_activitywatch_controls_and_stats(self):
+        plugin = load_plugin()
+
+        def duration_provider(start, end, tz_offset):
+            del tz_offset
+            days = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).days
+            return days * 2 * 3600
+
+        output = plugin.render_menu(
+            show_icon=False,
+            today_secs=2 * 3600,
+            week_secs=10 * 3600,
+            now=datetime(2026, 5, 15, 12, 0).astimezone(),
+            duration_provider=duration_provider,
+            activitywatch_running=True,
+        )
+
+        self.assertIn("⏹ ActivityWatch stoppen", output)
+        self.assertIn("▶ ActivityWatch starten", output)
+        self.assertIn("📊 Statistiken", output)
+        self.assertIn("--Monatsdurchschnitt/Tag:", output)
+        self.assertIn("--Letzte Wochen", output)
+        self.assertIn("--Diese Woche:", output)
+        self.assertIn("--Vorwoche:", output)
+
+    def test_stop_action_uses_timeout_before_process_kill(self):
+        source = SCRIPT.read_text()
+        self.assertIn("timeout=3", source)
+        self.assertIn("subprocess.TimeoutExpired", source)
+        self.assertIn('["pkill", "-KILL", "-x", process_name]', source)
+
+
+if __name__ == "__main__":
+    unittest.main()
