@@ -41,6 +41,13 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("--Vorwoche:", output)
         self.assertIn("🌐 Cognitor ohne Tailscale starten", output)
         self.assertIn("param1=--start-cognitor", output)
+        self.assertIn("🧩 Lokale Services", output)
+        self.assertIn("FollowMyFriends", output)
+        self.assertIn("OpenClaw Gateway", output)
+        self.assertIn("Hermes Gateway", output)
+        self.assertIn("Siemens Geschirrspueler", output)
+        self.assertIn("param1=--service", output)
+        self.assertIn("param2=clogwork", output)
 
     def test_stop_action_uses_timeout_before_process_kill(self):
         source = SCRIPT.read_text()
@@ -63,8 +70,28 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)
         self.assertIn("🌐 Cognitor ohne Tailscale starten", output)
+        self.assertIn("🧩 Lokale Services", output)
+        self.assertIn("FindMySync Receiver", output)
+        self.assertIn("param2=openclaw_gateway", output)
         self.assertIn("📊 Activity anzeigen", output)
         self.assertIn("🔄 Aktualisieren", output)
+
+    def test_local_service_definitions_have_start_actions(self):
+        plugin = load_plugin()
+        service_ids = {item["id"] for item in plugin.LOCAL_SERVICES}
+
+        self.assertIn("followmyfriends", service_ids)
+        self.assertIn("findmysync_app", service_ids)
+        self.assertIn("findmysync_receiver", service_ids)
+        self.assertIn("openclaw_gateway", service_ids)
+        self.assertIn("hermes_gateway", service_ids)
+        self.assertIn("clogwork", service_ids)
+
+    def test_app_services_are_stopped_before_restart(self):
+        source = SCRIPT.read_text()
+        self.assertIn("def stop_service_processes", source)
+        self.assertIn('["pkill", "-TERM", "-x", process_name]', source)
+        self.assertIn('was_running and service.get("app") and not label', source)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,8 @@
 
 import json
 import os
+import plistlib
+import socket
 import subprocess
 import sys
 import time
@@ -31,6 +33,54 @@ ACTIVITYWATCH_PROCESSES = [
     "aw-watcher-input",
     "aw-notify",
     "aw-sync",
+]
+LOCAL_SERVICES = [
+    {
+        "id": "followmyfriends",
+        "label": "FollowMyFriends",
+        "processes": ["FollowMyFriends"],
+        "app": "/Applications/FollowMyFriends.app",
+    },
+    {
+        "id": "findmysync_app",
+        "label": "FindMySync App",
+        "processes": ["FindMySync"],
+        "app": "/Applications/FindMySync.app",
+        "launch_agent": "ai.openclaw.findmysync.app",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/ai.openclaw.findmysync.app.plist"),
+    },
+    {
+        "id": "findmysync_receiver",
+        "label": "FindMySync Receiver",
+        "ports": [8765],
+        "process_patterns": ["findmysync_receiver.py"],
+        "launch_agent": "ai.openclaw.findmysync.receiver",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/ai.openclaw.findmysync.receiver.plist"),
+    },
+    {
+        "id": "openclaw_gateway",
+        "label": "OpenClaw Gateway",
+        "ports": [18790],
+        "process_patterns": ["openclaw/dist/index.js", "openclaw"],
+        "launch_agent": "ai.openclaw.gateway",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/ai.openclaw.gateway.plist"),
+    },
+    {
+        "id": "hermes_gateway",
+        "label": "Hermes Gateway",
+        "process_patterns": ["hermes_cli.main", "hermes gateway"],
+        "launch_agent": "ai.hermes.gateway",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/ai.hermes.gateway.plist"),
+    },
+    {
+        "id": "clogwork",
+        "label": "Siemens Geschirrspueler",
+        "ports": [8766],
+        "process_patterns": ["hc_cloud.py serve"],
+        "launch_agent": "eu.hausleitner.clogwork",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/eu.hausleitner.clogwork.plist"),
+        "href": "http://localhost:8766/",
+    },
 ]
 
 
@@ -59,6 +109,150 @@ def notify(message, title="ActivityWatch"):
         stderr=subprocess.DEVNULL,
         check=False,
     )
+
+
+def port_open(port):
+    try:
+        with socket.create_connection(("127.0.0.1", int(port)), timeout=0.3):
+            return True
+    except OSError:
+        return False
+
+
+def process_exact_running(process_name):
+    result = subprocess.run(
+        ["pgrep", "-x", process_name],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def process_pattern_running(pattern):
+    result = subprocess.run(
+        ["pgrep", "-f", pattern],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def service_running(service):
+    if any(port_open(port) for port in service.get("ports", [])):
+        return True
+    if any(process_exact_running(name) for name in service.get("processes", [])):
+        return True
+    if any(process_pattern_running(pattern) for pattern in service.get("process_patterns", [])):
+        return True
+    return False
+
+
+def load_plist(path):
+    with open(path, "rb") as f:
+        return plistlib.load(f)
+
+
+def run_plist_program(plist_path):
+    config = load_plist(plist_path)
+    args = config.get("ProgramArguments") or []
+    if not args:
+        return 1
+
+    env = os.environ.copy()
+    env.update(config.get("EnvironmentVariables") or {})
+    cwd = config.get("WorkingDirectory") or None
+    stdout_path = config.get("StandardOutPath")
+    stderr_path = config.get("StandardErrorPath")
+
+    stdout = open(stdout_path, "ab") if stdout_path else subprocess.DEVNULL
+    stderr = open(stderr_path, "ab") if stderr_path else subprocess.DEVNULL
+    try:
+        subprocess.Popen(
+            args,
+            cwd=cwd,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=stdout,
+            stderr=stderr,
+            start_new_session=True,
+        )
+    finally:
+        if stdout_path:
+            stdout.close()
+        if stderr_path:
+            stderr.close()
+    return 0
+
+
+def restart_launch_agent(label, plist_path):
+    target = f"gui/{os.getuid()}/{label}"
+    domain = f"gui/{os.getuid()}"
+
+    subprocess.run(
+        ["launchctl", "bootstrap", domain, plist_path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    result = subprocess.run(
+        ["launchctl", "kickstart", "-k", target],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode == 0:
+        return 0
+
+    if os.path.exists(plist_path):
+        return run_plist_program(plist_path)
+    return result.returncode
+
+
+def stop_service_processes(service):
+    for process_name in service.get("processes", []):
+        subprocess.run(
+            ["pkill", "-TERM", "-x", process_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    for pattern in service.get("process_patterns", []):
+        subprocess.run(
+            ["pkill", "-TERM", "-f", pattern],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+
+
+def restart_local_service(service_id):
+    service = next((item for item in LOCAL_SERVICES if item["id"] == service_id), None)
+    if not service:
+        notify(f"Unbekannter Service: {service_id}", title="Lokale Services")
+        return 1
+
+    label = service.get("launch_agent")
+    plist_path = service.get("plist")
+    was_running = service_running(service)
+    if was_running and service.get("app") and not label:
+        stop_service_processes(service)
+        time.sleep(1)
+
+    if label and plist_path and os.path.exists(plist_path):
+        code = restart_launch_agent(label, plist_path)
+    elif service.get("app") and os.path.isdir(service["app"]):
+        code = subprocess.run(["open", "-gj", service["app"]], check=False).returncode
+    else:
+        code = 1
+
+    action = "neu gestartet" if was_running else "gestartet"
+    if code == 0:
+        notify(f"{service['label']} wird {action}.", title="Lokale Services")
+    else:
+        notify(f"{service['label']} konnte nicht gestartet werden.", title="Lokale Services")
+    return code
 
 
 def start_activitywatch():
@@ -135,6 +329,8 @@ def handle_action(argv):
         raise SystemExit(stop_activitywatch())
     if action == "--start-cognitor":
         raise SystemExit(start_cognitor())
+    if action == "--service" and len(argv) > 2:
+        raise SystemExit(restart_local_service(argv[2]))
     return False
 
 
@@ -266,6 +462,25 @@ def activitywatch_running():
     return False
 
 
+def render_local_services(indent=""):
+    script_path = os.path.abspath(__file__)
+    lines = [f"{indent}🧩 Lokale Services"]
+    for service in LOCAL_SERVICES:
+        running = service_running(service)
+        icon = "🟢" if running else "🔴"
+        action = "Neustart" if running else "Starten"
+        detail = ""
+        if service.get("ports"):
+            detail = f" · :{','.join(str(port) for port in service['ports'])}"
+        lines.append(
+            f"{indent}--{icon} {service['label']}{detail} · {action} | "
+            f"bash='{script_path}' param1=--service param2={service['id']} terminal=false refresh=true"
+        )
+        if service.get("href"):
+            lines.append(f"{indent}--↗ Öffnen: {service['label']} | href={service['href']}")
+    return lines
+
+
 def week_bounds(now, weeks_ago):
     week_start = now - timedelta(days=now.weekday(), weeks=weeks_ago)
     week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -340,9 +555,10 @@ def render_menu(
             f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
             f"🌐 Cognitor ohne Tailscale starten | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
             "---",
-            "📊 Statistiken",
         ]
     )
+    lines.extend(render_local_services())
+    lines.extend(["---", "📊 Statistiken"])
 
     stats = build_stats(now, duration_provider)
     for label, seconds in stats[:2]:
@@ -383,11 +599,17 @@ def render_error_menu(error):
         f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
         f"🌐 Cognitor ohne Tailscale starten | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
         "---",
-        f"📊 Activity anzeigen | href={BASE_URL}/#/activity/{HOSTNAME}/view/",
-        f"📈 Timeline anzeigen | href={BASE_URL}/#/timeline",
-        f"⚙️ ActivityWatch Dashboard | href={BASE_URL}",
-        "🔄 Aktualisieren | refresh=true",
     ]
+    lines.extend(render_local_services())
+    lines.extend(
+        [
+            "---",
+            f"📊 Activity anzeigen | href={BASE_URL}/#/activity/{HOSTNAME}/view/",
+            f"📈 Timeline anzeigen | href={BASE_URL}/#/timeline",
+            f"⚙️ ActivityWatch Dashboard | href={BASE_URL}",
+            "🔄 Aktualisieren | refresh=true",
+        ]
+    )
     return "\n".join(lines)
 
 
