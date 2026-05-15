@@ -309,13 +309,15 @@ def stop_activitywatch():
     return 0
 
 
-def start_cognitor():
+def start_cognitor(rotate_proxy=False):
     if not os.path.isfile(COGNITOR_LAUNCHER):
         notify("cognitor.command wurde nicht gefunden.", title="Cognitor")
         return 1
 
     env = os.environ.copy()
     env["COGNITOR_STOP_TAILSCALE"] = "0"
+    if rotate_proxy:
+        env["COGNITOR_ROTATE_PROXY"] = "1"
     subprocess.Popen(
         [COGNITOR_LAUNCHER],
         stdin=subprocess.DEVNULL,
@@ -324,7 +326,8 @@ def start_cognitor():
         env=env,
         start_new_session=True,
     )
-    notify("Cognitor wird gestartet. Tailscale bleibt an.", title="Cognitor")
+    message = "Cognitor wird mit naechstem Proxy gestartet." if rotate_proxy else "Cognitor wird gestartet. Tailscale bleibt an."
+    notify(message, title="Cognitor")
     return 0
 
 
@@ -342,6 +345,8 @@ def handle_action(argv):
         raise SystemExit(stop_activitywatch())
     if action == "--start-cognitor":
         raise SystemExit(start_cognitor())
+    if action == "--rotate-cognitor":
+        raise SystemExit(start_cognitor(rotate_proxy=True))
     if action == "--service" and len(argv) > 2:
         raise SystemExit(restart_local_service(argv[2]))
     return False
@@ -569,6 +574,7 @@ def render_menu(
             f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
             f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
             f"🌐 Cognitor starten (Tailscale bleibt an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+            f"🔁 Cognitor Proxy rotieren + starten | bash='{script_path}' param1=--rotate-cognitor terminal=false refresh=false",
             "---",
         ]
     )
@@ -613,6 +619,7 @@ def render_error_menu(error):
         f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
         f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
         f"🌐 Cognitor starten (Tailscale bleibt an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+        f"🔁 Cognitor Proxy rotieren + starten | bash='{script_path}' param1=--rotate-cognitor terminal=false refresh=false",
         "---",
     ]
     lines.extend(render_local_services())

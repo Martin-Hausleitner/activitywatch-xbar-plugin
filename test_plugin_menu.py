@@ -43,6 +43,8 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("--Vorwoche:", output)
         self.assertIn("🌐 Cognitor starten (Tailscale bleibt an)", output)
         self.assertIn("param1=--start-cognitor", output)
+        self.assertIn("🔁 Cognitor Proxy rotieren + starten", output)
+        self.assertIn("param1=--rotate-cognitor", output)
         self.assertIn("🧩 Lokale Services", output)
         self.assertRegex(output, r"\n[🟢🔴] FollowMyFriends")
         self.assertNotRegex(output, r"\n--[🟢🔴] FollowMyFriends")
@@ -62,8 +64,10 @@ class PluginMenuTests(unittest.TestCase):
     def test_cognitor_action_starts_detached_with_tailscale_left_on(self):
         source = SCRIPT.read_text()
         self.assertIn("COGNITOR_STOP_TAILSCALE", source)
+        self.assertIn("COGNITOR_ROTATE_PROXY", source)
         self.assertIn("start_new_session=True", source)
         self.assertIn("--start-cognitor", source)
+        self.assertIn("--rotate-cognitor", source)
         self.assertIn('env["COGNITOR_STOP_TAILSCALE"] = "0"', source)
 
     def test_error_menu_keeps_controls_visible(self):
@@ -75,6 +79,7 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)
         self.assertIn("🌐 Cognitor starten (Tailscale bleibt an)", output)
+        self.assertIn("🔁 Cognitor Proxy rotieren + starten", output)
         self.assertIn("🧩 Lokale Services", output)
         self.assertRegex(output, r"\n[🟢🔴] FindMySync Receiver")
         self.assertNotRegex(output, r"\n--[🟢🔴] FindMySync Receiver")
