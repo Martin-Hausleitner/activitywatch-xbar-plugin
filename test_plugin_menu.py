@@ -39,12 +39,20 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("--Letzte Wochen", output)
         self.assertIn("--Diese Woche:", output)
         self.assertIn("--Vorwoche:", output)
+        self.assertIn("🌐 Cognitor ohne Tailscale starten", output)
+        self.assertIn("param1=--start-cognitor", output)
 
     def test_stop_action_uses_timeout_before_process_kill(self):
         source = SCRIPT.read_text()
         self.assertIn("timeout=3", source)
         self.assertIn("subprocess.TimeoutExpired", source)
         self.assertIn('["pkill", "-KILL", "-x", process_name]', source)
+
+    def test_cognitor_action_starts_detached_without_tailscale(self):
+        source = SCRIPT.read_text()
+        self.assertIn("COGNITOR_STOP_TAILSCALE", source)
+        self.assertIn("start_new_session=True", source)
+        self.assertIn("--start-cognitor", source)
 
 
 if __name__ == "__main__":

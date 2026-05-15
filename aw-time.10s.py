@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # <xbar.title>ActivityWatch Active Time</xbar.title>
-# <xbar.version>v1.3</xbar.version>
-# <xbar.desc>Shows active time, ActivityWatch controls, and weekly/monthly stats</xbar.desc>
+# <xbar.version>v1.4</xbar.version>
+# <xbar.desc>Shows active time, Cognitor launch, ActivityWatch controls, and weekly/monthly stats</xbar.desc>
 # <xbar.refreshInterval>10s</xbar.refreshInterval>
 
 import json
@@ -18,6 +18,9 @@ BASE_URL = "http://localhost:5600"
 STATE_FILE = os.path.expanduser("~/.aw_xbar_icon_state")
 CACHE_FILE = os.path.expanduser("~/.aw_xbar_cache.json")
 ACTIVITYWATCH_APP = "/Applications/ActivityWatch.app"
+COGNITOR_LAUNCHER = os.path.expanduser(
+    os.environ.get("COGNITOR_LAUNCHER", "~/Desktop/cognitor.command")
+)
 ACTIVITYWATCH_PROCESSES = [
     "aw-qt",
     "aw-server",
@@ -49,9 +52,9 @@ def set_icon_state(enabled):
         pass
 
 
-def notify(message):
+def notify(message, title="ActivityWatch"):
     subprocess.run(
-        ["osascript", "-e", f'display notification "{message}" with title "ActivityWatch"'],
+        ["osascript", "-e", f'display notification "{message}" with title "{title}"'],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -99,6 +102,25 @@ def stop_activitywatch():
     return 0
 
 
+def start_cognitor():
+    if not os.path.isfile(COGNITOR_LAUNCHER):
+        notify("cognitor.command wurde nicht gefunden.", title="Cognitor")
+        return 1
+
+    env = os.environ.copy()
+    env["COGNITOR_STOP_TAILSCALE"] = "0"
+    subprocess.Popen(
+        [COGNITOR_LAUNCHER],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env,
+        start_new_session=True,
+    )
+    notify("Cognitor wird ohne Tailscale gestartet.", title="Cognitor")
+    return 0
+
+
 def handle_action(argv):
     if len(argv) <= 1:
         return False
@@ -111,6 +133,8 @@ def handle_action(argv):
         raise SystemExit(start_activitywatch())
     if action == "--stop-aw":
         raise SystemExit(stop_activitywatch())
+    if action == "--start-cognitor":
+        raise SystemExit(start_cognitor())
     return False
 
 
@@ -314,6 +338,7 @@ def render_menu(
             "---",
             f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
             f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
+            f"🌐 Cognitor ohne Tailscale starten | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
             "---",
             "📊 Statistiken",
         ]
