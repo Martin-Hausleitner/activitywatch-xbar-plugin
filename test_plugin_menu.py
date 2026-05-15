@@ -54,6 +54,18 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("start_new_session=True", source)
         self.assertIn("--start-cognitor", source)
 
+    def test_error_menu_keeps_controls_visible(self):
+        plugin = load_plugin()
+        output = plugin.render_error_menu(RuntimeError("boom"))
+
+        self.assertIn("⚠️ aw-time", output)
+        self.assertIn("Details: boom", output)
+        self.assertIn("▶ ActivityWatch starten", output)
+        self.assertIn("⏹ ActivityWatch stoppen", output)
+        self.assertIn("🌐 Cognitor ohne Tailscale starten", output)
+        self.assertIn("📊 Activity anzeigen", output)
+        self.assertIn("🔄 Aktualisieren", output)
+
 
 if __name__ == "__main__":
     unittest.main()

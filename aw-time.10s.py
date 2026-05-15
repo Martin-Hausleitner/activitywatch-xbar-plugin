@@ -371,6 +371,26 @@ def render_menu(
     return "\n".join(lines)
 
 
+def render_error_menu(error):
+    script_path = os.path.abspath(__file__)
+    lines = [
+        "⚠️ aw-time",
+        "---",
+        "ActivityWatch nicht erreichbar oder interner Fehler",
+        f"Details: {error}",
+        "---",
+        f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
+        f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
+        f"🌐 Cognitor ohne Tailscale starten | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+        "---",
+        f"📊 Activity anzeigen | href={BASE_URL}/#/activity/{HOSTNAME}/view/",
+        f"📈 Timeline anzeigen | href={BASE_URL}/#/timeline",
+        f"⚙️ ActivityWatch Dashboard | href={BASE_URL}",
+        "🔄 Aktualisieren | refresh=true",
+    ]
+    return "\n".join(lines)
+
+
 def main():
     if handle_action(sys.argv):
         return 0
@@ -380,11 +400,7 @@ def main():
         today_secs, week_secs = get_times_cached(show_icon)
         print(render_menu(show_icon, today_secs, week_secs))
     except Exception as e:
-        print("⚠️ Fehler")
-        print("---")
-        print("ActivityWatch nicht erreichbar oder interner Fehler")
-        print(f"Details: {e}")
-        print("Retry | refresh=true")
+        print(render_error_menu(e))
         return 1
     return 0
 
