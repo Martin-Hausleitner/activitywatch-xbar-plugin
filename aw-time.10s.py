@@ -316,6 +316,8 @@ def start_cognitor(rotate_proxy=False):
 
     env = os.environ.copy()
     env["COGNITOR_STOP_TAILSCALE"] = "0"
+    env["COGNITOR_LOAD_EXTENSIONS"] = "1"
+    env["COGNITOR_LOAD_PROXY_MONITOR"] = "1"
     if rotate_proxy:
         env["COGNITOR_ROTATE_PROXY"] = "1"
     subprocess.Popen(

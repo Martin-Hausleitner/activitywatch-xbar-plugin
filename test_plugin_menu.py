@@ -65,6 +65,8 @@ class PluginMenuTests(unittest.TestCase):
         source = SCRIPT.read_text()
         self.assertIn("COGNITOR_STOP_TAILSCALE", source)
         self.assertIn("COGNITOR_ROTATE_PROXY", source)
+        self.assertIn('env["COGNITOR_LOAD_EXTENSIONS"] = "1"', source)
+        self.assertIn('env["COGNITOR_LOAD_PROXY_MONITOR"] = "1"', source)
         self.assertIn("start_new_session=True", source)
         self.assertIn("--start-cognitor", source)
         self.assertIn("--rotate-cognitor", source)
