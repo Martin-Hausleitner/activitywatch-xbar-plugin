@@ -65,7 +65,7 @@ class PluginMenuTests(unittest.TestCase):
         plugin = load_plugin()
         output = plugin.render_error_menu(RuntimeError("boom"))
 
-        self.assertIn("⚠️ aw-time", output)
+        self.assertIn("aw-time", output)
         self.assertIn("Details: boom", output)
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)
@@ -92,6 +92,11 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("def stop_service_processes", source)
         self.assertIn('["pkill", "-TERM", "-x", process_name]', source)
         self.assertIn('was_running and service.get("app") and not label', source)
+
+    def test_error_fallback_exits_successfully_for_xbar(self):
+        source = SCRIPT.read_text()
+        self.assertIn("print(render_error_menu(e))", source)
+        self.assertRegex(source, r"except Exception as e:\n\s+print\(render_error_menu\(e\)\)\n\s+return 0")
 
 
 if __name__ == "__main__":

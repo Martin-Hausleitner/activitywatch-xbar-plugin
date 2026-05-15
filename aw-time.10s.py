@@ -590,7 +590,7 @@ def render_menu(
 def render_error_menu(error):
     script_path = os.path.abspath(__file__)
     lines = [
-        "⚠️ aw-time",
+        "aw-time",
         "---",
         "ActivityWatch nicht erreichbar oder interner Fehler",
         f"Details: {error}",
@@ -623,7 +623,7 @@ def main():
         print(render_menu(show_icon, today_secs, week_secs))
     except Exception as e:
         print(render_error_menu(e))
-        return 1
+        return 0
     return 0
 
 
