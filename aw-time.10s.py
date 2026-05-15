@@ -76,6 +76,8 @@ LOCAL_SERVICES = [
         "id": "clogwork",
         "label": "Siemens Geschirrspueler",
         "ports": [8766],
+        "status_url": "http://localhost:8766/status",
+        "status_ok_key": "ok",
         "process_patterns": ["hc_cloud.py serve"],
         "launch_agent": "eu.hausleitner.clogwork",
         "plist": os.path.expanduser("~/Library/LaunchAgents/eu.hausleitner.clogwork.plist"),
@@ -139,7 +141,18 @@ def process_pattern_running(pattern):
     return result.returncode == 0
 
 
+def json_status_ok(url, ok_key="ok"):
+    try:
+        with urllib.request.urlopen(url, timeout=1.5) as resp:
+            data = json.loads(resp.read())
+    except Exception:
+        return False
+    return data.get(ok_key) is True
+
+
 def service_running(service):
+    if service.get("status_url"):
+        return json_status_ok(service["status_url"], service.get("status_ok_key", "ok"))
     if any(port_open(port) for port in service.get("ports", [])):
         return True
     if any(process_exact_running(name) for name in service.get("processes", [])):
@@ -311,7 +324,7 @@ def start_cognitor():
         env=env,
         start_new_session=True,
     )
-    notify("Cognitor wird ohne Tailscale gestartet.", title="Cognitor")
+    notify("Cognitor wird gestartet. Tailscale bleibt an.", title="Cognitor")
     return 0
 
 
@@ -555,7 +568,7 @@ def render_menu(
             "---",
             f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
             f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
-            f"🌐 Cognitor ohne Tailscale starten | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+            f"🌐 Cognitor starten (Tailscale bleibt an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
             "---",
         ]
     )
@@ -599,7 +612,7 @@ def render_error_menu(error):
         "---",
         f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
         f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
-        f"🌐 Cognitor ohne Tailscale starten | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+        f"🌐 Cognitor starten (Tailscale bleibt an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
         "---",
     ]
     lines.extend(render_local_services())

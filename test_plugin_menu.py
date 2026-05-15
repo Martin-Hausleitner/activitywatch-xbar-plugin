@@ -1,7 +1,9 @@
 import importlib.util
+import json
 import pathlib
 import unittest
 from datetime import datetime
+from unittest import mock
 
 
 SCRIPT = pathlib.Path(__file__).with_name("aw-time.10s.py")
@@ -39,7 +41,7 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("--Letzte Wochen", output)
         self.assertIn("--Diese Woche:", output)
         self.assertIn("--Vorwoche:", output)
-        self.assertIn("🌐 Cognitor ohne Tailscale starten", output)
+        self.assertIn("🌐 Cognitor starten (Tailscale bleibt an)", output)
         self.assertIn("param1=--start-cognitor", output)
         self.assertIn("🧩 Lokale Services", output)
         self.assertRegex(output, r"\n[🟢🔴] FollowMyFriends")
@@ -57,11 +59,12 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("subprocess.TimeoutExpired", source)
         self.assertIn('["pkill", "-KILL", "-x", process_name]', source)
 
-    def test_cognitor_action_starts_detached_without_tailscale(self):
+    def test_cognitor_action_starts_detached_with_tailscale_left_on(self):
         source = SCRIPT.read_text()
         self.assertIn("COGNITOR_STOP_TAILSCALE", source)
         self.assertIn("start_new_session=True", source)
         self.assertIn("--start-cognitor", source)
+        self.assertIn('env["COGNITOR_STOP_TAILSCALE"] = "0"', source)
 
     def test_error_menu_keeps_controls_visible(self):
         plugin = load_plugin()
@@ -71,7 +74,7 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("Details: boom", output)
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)
-        self.assertIn("🌐 Cognitor ohne Tailscale starten", output)
+        self.assertIn("🌐 Cognitor starten (Tailscale bleibt an)", output)
         self.assertIn("🧩 Lokale Services", output)
         self.assertRegex(output, r"\n[🟢🔴] FindMySync Receiver")
         self.assertNotRegex(output, r"\n--[🟢🔴] FindMySync Receiver")
@@ -101,6 +104,24 @@ class PluginMenuTests(unittest.TestCase):
         source = SCRIPT.read_text()
         self.assertIn("print(render_error_menu(e))", source)
         self.assertRegex(source, r"except Exception as e:\n\s+print\(render_error_menu\(e\)\)\n\s+return 0")
+
+    def test_status_url_overrides_open_port_for_service_status(self):
+        plugin = load_plugin()
+        service = {"status_url": "http://localhost/status", "status_ok_key": "ok", "ports": [1]}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return json.dumps({"ok": False}).encode()
+
+        with mock.patch.object(plugin.urllib.request, "urlopen", return_value=FakeResponse()):
+            with mock.patch.object(plugin, "port_open", return_value=True):
+                self.assertFalse(plugin.service_running(service))
 
 
 if __name__ == "__main__":
