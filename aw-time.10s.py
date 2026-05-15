@@ -465,6 +465,8 @@ def activitywatch_running():
 def render_local_services(indent=""):
     script_path = os.path.abspath(__file__)
     lines = [f"{indent}🧩 Lokale Services"]
+    item_prefix = indent
+    child_prefix = f"{indent}--" if indent else ""
     for service in LOCAL_SERVICES:
         running = service_running(service)
         icon = "🟢" if running else "🔴"
@@ -473,11 +475,11 @@ def render_local_services(indent=""):
         if service.get("ports"):
             detail = f" · :{','.join(str(port) for port in service['ports'])}"
         lines.append(
-            f"{indent}--{icon} {service['label']}{detail} · {action} | "
+            f"{item_prefix}{icon} {service['label']}{detail} · {action} | "
             f"bash='{script_path}' param1=--service param2={service['id']} terminal=false refresh=true"
         )
         if service.get("href"):
-            lines.append(f"{indent}--↗ Öffnen: {service['label']} | href={service['href']}")
+            lines.append(f"{child_prefix}↗ Öffnen: {service['label']} | href={service['href']}")
     return lines
 
 
