@@ -34,6 +34,23 @@ ACTIVITYWATCH_PROCESSES = [
     "aw-notify",
     "aw-sync",
 ]
+ACTIVITYWATCH_COMPONENTS = [
+    {
+        "label": "Server",
+        "processes": ["aw-server", "aw-server-rust"],
+        "binary": "/Applications/ActivityWatch.app/Contents/MacOS/aw-server",
+    },
+    {
+        "label": "AFK-Watcher",
+        "processes": ["aw-watcher-afk"],
+        "binary": "/Applications/ActivityWatch.app/Contents/MacOS/aw-watcher-afk",
+    },
+    {
+        "label": "Fenster-Watcher",
+        "processes": ["aw-watcher-window", "aw-watcher-window-macos"],
+        "binary": "/Applications/ActivityWatch.app/Contents/MacOS/aw-watcher-window",
+    },
+]
 LOCAL_SERVICES = [
     {
         "id": "followmyfriends",
@@ -139,6 +156,18 @@ def process_pattern_running(pattern):
         check=False,
     )
     return result.returncode == 0
+
+
+def any_process_running(process_names):
+    return any(process_exact_running(name) for name in process_names)
+
+
+def missing_activitywatch_components():
+    return [
+        component
+        for component in ACTIVITYWATCH_COMPONENTS
+        if not any_process_running(component["processes"])
+    ]
 
 
 def json_status_ok(url, ok_key="ok"):
@@ -273,7 +302,28 @@ def start_activitywatch():
         notify("ActivityWatch wurde nicht gefunden.")
         return 1
 
-    subprocess.run(["open", "-a", ACTIVITYWATCH_APP], check=False)
+    subprocess.run(["open", "-gj", ACTIVITYWATCH_APP], check=False)
+    time.sleep(2)
+
+    for component in missing_activitywatch_components():
+        binary = component["binary"]
+        if os.path.isfile(binary):
+            subprocess.Popen(
+                [binary],
+                cwd=os.path.dirname(binary),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+    time.sleep(1)
+
+    missing = missing_activitywatch_components()
+    if missing:
+        labels = ", ".join(component["label"] for component in missing)
+        notify(f"ActivityWatch unvollstaendig: {labels}", title="ActivityWatch")
+        return 1
+
     notify("ActivityWatch wurde gestartet.")
     return 0
 
@@ -315,6 +365,7 @@ def start_cognitor(rotate_proxy=False):
         return 1
 
     env = os.environ.copy()
+    env["COGNITOR_STOP_ACTIVITYWATCH"] = "0"
     env["COGNITOR_STOP_TAILSCALE"] = "0"
     env["COGNITOR_LOAD_EXTENSIONS"] = "1"
     env["COGNITOR_LOAD_PROXY_MONITOR"] = "1"
@@ -470,16 +521,7 @@ def fmt_hours(seconds):
 
 
 def activitywatch_running():
-    for process_name in ACTIVITYWATCH_PROCESSES:
-        result = subprocess.run(
-            ["pgrep", "-x", process_name],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-        if result.returncode == 0:
-            return True
-    return False
+    return not missing_activitywatch_components()
 
 
 def render_local_services(indent=""):
@@ -571,7 +613,7 @@ def render_menu(
             "---",
             f"Heute: {fmt(today_secs)}",
             f"Woche: {fmt(week_secs)}",
-            "ActivityWatch: läuft" if running else "ActivityWatch: gestoppt",
+            "ActivityWatch: läuft" if running else "ActivityWatch: unvollständig/gestoppt",
             "---",
             f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
             f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",

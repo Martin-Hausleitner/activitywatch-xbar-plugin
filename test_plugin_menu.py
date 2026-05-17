@@ -61,8 +61,9 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("subprocess.TimeoutExpired", source)
         self.assertIn('["pkill", "-KILL", "-x", process_name]', source)
 
-    def test_cognitor_action_starts_detached_with_tailscale_left_on(self):
+    def test_cognitor_action_starts_detached_with_activitywatch_and_tailscale_left_on(self):
         source = SCRIPT.read_text()
+        self.assertIn("COGNITOR_STOP_ACTIVITYWATCH", source)
         self.assertIn("COGNITOR_STOP_TAILSCALE", source)
         self.assertIn("COGNITOR_ROTATE_PROXY", source)
         self.assertIn('env["COGNITOR_LOAD_EXTENSIONS"] = "1"', source)
@@ -70,7 +71,22 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("start_new_session=True", source)
         self.assertIn("--start-cognitor", source)
         self.assertIn("--rotate-cognitor", source)
+        self.assertIn('env["COGNITOR_STOP_ACTIVITYWATCH"] = "0"', source)
         self.assertIn('env["COGNITOR_STOP_TAILSCALE"] = "0"', source)
+
+    def test_activitywatch_health_requires_core_watchers(self):
+        plugin = load_plugin()
+        source = SCRIPT.read_text()
+
+        self.assertIn("ACTIVITYWATCH_COMPONENTS", source)
+        self.assertIn("missing_activitywatch_components", source)
+        self.assertIn("aw-watcher-window", source)
+        with mock.patch.object(
+            plugin,
+            "missing_activitywatch_components",
+            return_value=[{"label": "Fenster-Watcher"}],
+        ):
+            self.assertFalse(plugin.activitywatch_running())
 
     def test_error_menu_keeps_controls_visible(self):
         plugin = load_plugin()
