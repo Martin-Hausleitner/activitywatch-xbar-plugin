@@ -381,7 +381,7 @@ def start_cognitor(rotate_proxy=False):
         return 1
 
     env = os.environ.copy()
-    env["COGNITOR_STOP_ACTIVITYWATCH"] = "0"
+    env["COGNITOR_STOP_ACTIVITYWATCH"] = "1"
     env["COGNITOR_STOP_TAILSCALE"] = "0"
     env["COGNITOR_LOAD_EXTENSIONS"] = "1"
     env["COGNITOR_LOAD_PROXY_MONITOR"] = "1"
@@ -395,7 +395,11 @@ def start_cognitor(rotate_proxy=False):
         env=env,
         start_new_session=True,
     )
-    message = "Cognitor wird mit naechstem Proxy gestartet." if rotate_proxy else "Cognitor wird gestartet. Tailscale bleibt an."
+    message = (
+        "Cognitor wird mit naechstem Proxy gestartet. ActivityWatch pausiert."
+        if rotate_proxy
+        else "Cognitor wird gestartet. ActivityWatch pausiert, Tailscale bleibt an."
+    )
     notify(message, title="Cognitor")
     return 0
 
@@ -633,7 +637,7 @@ def render_menu(
             "---",
             f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
             f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
-            f"🌐 Cognitor starten (Tailscale bleibt an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+            f"🌐 Cognitor starten (AW pausiert, Tailscale an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
             f"🔁 Cognitor Proxy rotieren + starten | bash='{script_path}' param1=--rotate-cognitor terminal=false refresh=false",
             "---",
         ]
@@ -678,7 +682,7 @@ def render_error_menu(error):
         "---",
         f"▶ ActivityWatch starten | bash='{script_path}' param1=--start-aw terminal=false refresh=true",
         f"⏹ ActivityWatch stoppen | bash='{script_path}' param1=--stop-aw terminal=false refresh=true",
-        f"🌐 Cognitor starten (Tailscale bleibt an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
+        f"🌐 Cognitor starten (AW pausiert, Tailscale an) | bash='{script_path}' param1=--start-cognitor terminal=false refresh=false",
         f"🔁 Cognitor Proxy rotieren + starten | bash='{script_path}' param1=--rotate-cognitor terminal=false refresh=false",
         "---",
     ]

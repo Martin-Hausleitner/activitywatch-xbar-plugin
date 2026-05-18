@@ -41,7 +41,7 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("--Letzte Wochen", output)
         self.assertIn("--Diese Woche:", output)
         self.assertIn("--Vorwoche:", output)
-        self.assertIn("🌐 Cognitor starten (Tailscale bleibt an)", output)
+        self.assertIn("🌐 Cognitor starten (AW pausiert, Tailscale an)", output)
         self.assertIn("param1=--start-cognitor", output)
         self.assertIn("🔁 Cognitor Proxy rotieren + starten", output)
         self.assertIn("param1=--rotate-cognitor", output)
@@ -61,7 +61,7 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("subprocess.TimeoutExpired", source)
         self.assertIn('["pkill", "-KILL", "-x", process_name]', source)
 
-    def test_cognitor_action_starts_detached_with_activitywatch_and_tailscale_left_on(self):
+    def test_cognitor_action_starts_detached_with_activitywatch_paused_and_tailscale_left_on(self):
         source = SCRIPT.read_text()
         self.assertIn("COGNITOR_STOP_ACTIVITYWATCH", source)
         self.assertIn("COGNITOR_STOP_TAILSCALE", source)
@@ -71,8 +71,9 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("start_new_session=True", source)
         self.assertIn("--start-cognitor", source)
         self.assertIn("--rotate-cognitor", source)
-        self.assertIn('env["COGNITOR_STOP_ACTIVITYWATCH"] = "0"', source)
+        self.assertIn('env["COGNITOR_STOP_ACTIVITYWATCH"] = "1"', source)
         self.assertIn('env["COGNITOR_STOP_TAILSCALE"] = "0"', source)
+        self.assertIn("ActivityWatch pausiert", source)
 
     def test_activitywatch_health_requires_core_watchers(self):
         plugin = load_plugin()
@@ -100,7 +101,7 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("Details: boom", output)
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)
-        self.assertIn("🌐 Cognitor starten (Tailscale bleibt an)", output)
+        self.assertIn("🌐 Cognitor starten (AW pausiert, Tailscale an)", output)
         self.assertIn("🔁 Cognitor Proxy rotieren + starten", output)
         self.assertIn("🧩 Lokale Services", output)
         self.assertRegex(output, r"\n[🟢🔴] FindMySync Receiver")
