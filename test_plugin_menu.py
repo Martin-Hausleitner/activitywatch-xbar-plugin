@@ -80,7 +80,11 @@ class PluginMenuTests(unittest.TestCase):
 
         self.assertIn("ACTIVITYWATCH_COMPONENTS", source)
         self.assertIn("missing_activitywatch_components", source)
+        self.assertIn("clear_activitywatch_client_locks", source)
+        self.assertIn("terminate_activitywatch_processes", source)
+        self.assertIn("ACTIVITYWATCH_LOCK_DIR", source)
         self.assertIn("aw-watcher-window", source)
+        self.assertNotIn('"binary"', source)
         with mock.patch.object(
             plugin,
             "missing_activitywatch_components",
@@ -92,7 +96,7 @@ class PluginMenuTests(unittest.TestCase):
         plugin = load_plugin()
         output = plugin.render_error_menu(RuntimeError("boom"))
 
-        self.assertIn("aw-time", output)
+        self.assertEqual("⚠ offline", output.splitlines()[0])
         self.assertIn("Details: boom", output)
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)

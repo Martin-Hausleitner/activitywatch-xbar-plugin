@@ -20,6 +20,7 @@ BASE_URL = "http://localhost:5600"
 STATE_FILE = os.path.expanduser("~/.aw_xbar_icon_state")
 CACHE_FILE = os.path.expanduser("~/.aw_xbar_cache.json")
 ACTIVITYWATCH_APP = "/Applications/ActivityWatch.app"
+ACTIVITYWATCH_LOCK_DIR = os.path.expanduser("~/Library/Caches/activitywatch/client_locks")
 COGNITOR_LAUNCHER = os.path.expanduser(
     os.environ.get("COGNITOR_LAUNCHER", "~/Desktop/cognitor.command")
 )
@@ -38,17 +39,14 @@ ACTIVITYWATCH_COMPONENTS = [
     {
         "label": "Server",
         "processes": ["aw-server", "aw-server-rust"],
-        "binary": "/Applications/ActivityWatch.app/Contents/MacOS/aw-server",
     },
     {
         "label": "AFK-Watcher",
         "processes": ["aw-watcher-afk"],
-        "binary": "/Applications/ActivityWatch.app/Contents/MacOS/aw-watcher-afk",
     },
     {
         "label": "Fenster-Watcher",
         "processes": ["aw-watcher-window", "aw-watcher-window-macos"],
-        "binary": "/Applications/ActivityWatch.app/Contents/MacOS/aw-watcher-window",
     },
 ]
 LOCAL_SERVICES = [
@@ -168,6 +166,27 @@ def missing_activitywatch_components():
         for component in ACTIVITYWATCH_COMPONENTS
         if not any_process_running(component["processes"])
     ]
+
+
+def activitywatch_process_running():
+    return any_process_running(ACTIVITYWATCH_PROCESSES)
+
+
+def clear_activitywatch_client_locks():
+    if not os.path.isdir(ACTIVITYWATCH_LOCK_DIR):
+        return
+
+    lock_prefixes = {
+        process_name
+        for component in ACTIVITYWATCH_COMPONENTS
+        for process_name in component["processes"]
+    }
+    for filename in os.listdir(ACTIVITYWATCH_LOCK_DIR):
+        if any(filename.startswith(f"{prefix}-at-") for prefix in lock_prefixes):
+            try:
+                os.unlink(os.path.join(ACTIVITYWATCH_LOCK_DIR, filename))
+            except OSError:
+                pass
 
 
 def json_status_ok(url, ok_key="ok"):
@@ -302,33 +321,26 @@ def start_activitywatch():
         notify("ActivityWatch wurde nicht gefunden.")
         return 1
 
-    subprocess.run(["open", "-gj", ACTIVITYWATCH_APP], check=False)
-    time.sleep(2)
+    if missing_activitywatch_components() and activitywatch_process_running():
+        terminate_activitywatch_processes()
 
-    for component in missing_activitywatch_components():
-        binary = component["binary"]
-        if os.path.isfile(binary):
-            subprocess.Popen(
-                [binary],
-                cwd=os.path.dirname(binary),
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-    time.sleep(1)
+    clear_activitywatch_client_locks()
+    subprocess.run(["open", "-gj", ACTIVITYWATCH_APP], check=False)
+
+    for _ in range(15):
+        missing = missing_activitywatch_components()
+        if not missing:
+            notify("ActivityWatch wurde gestartet.")
+            return 0
+        time.sleep(1)
 
     missing = missing_activitywatch_components()
-    if missing:
-        labels = ", ".join(component["label"] for component in missing)
-        notify(f"ActivityWatch unvollstaendig: {labels}", title="ActivityWatch")
-        return 1
-
-    notify("ActivityWatch wurde gestartet.")
-    return 0
+    labels = ", ".join(component["label"] for component in missing)
+    notify(f"ActivityWatch unvollstaendig: {labels}", title="ActivityWatch")
+    return 1
 
 
-def stop_activitywatch():
+def terminate_activitywatch_processes():
     try:
         subprocess.run(
             ["osascript", "-e", 'tell application id "net.activitywatch.ActivityWatch" to quit'],
@@ -355,6 +367,10 @@ def stop_activitywatch():
             stderr=subprocess.DEVNULL,
             check=False,
         )
+
+
+def stop_activitywatch():
+    terminate_activitywatch_processes()
     notify("ActivityWatch wurde gestoppt.")
     return 0
 
@@ -655,7 +671,7 @@ def render_menu(
 def render_error_menu(error):
     script_path = os.path.abspath(__file__)
     lines = [
-        "aw-time",
+        "⚠ offline",
         "---",
         "ActivityWatch nicht erreichbar oder interner Fehler",
         f"Details: {error}",
