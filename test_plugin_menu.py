@@ -52,8 +52,12 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("OpenClaw Gateway", output)
         self.assertIn("Hermes Gateway", output)
         self.assertIn("Siemens Geschirrspueler", output)
+        self.assertIn("iOS Bildschirmzeit Import", output)
+        self.assertIn("Apple Health Export", output)
         self.assertIn("param1=--service", output)
         self.assertIn("param2=clogwork", output)
+        self.assertIn("param2=aw_screentime_import", output)
+        self.assertIn("param2=apple_health_export", output)
 
     def test_stop_action_uses_timeout_before_process_kill(self):
         source = SCRIPT.read_text()
@@ -97,7 +101,7 @@ class PluginMenuTests(unittest.TestCase):
         plugin = load_plugin()
         output = plugin.render_error_menu(RuntimeError("boom"))
 
-        self.assertEqual("⚠ offline", output.splitlines()[0])
+        self.assertEqual("⚠️ offline", output.splitlines()[0])
         self.assertIn("Details: boom", output)
         self.assertIn("▶ ActivityWatch starten", output)
         self.assertIn("⏹ ActivityWatch stoppen", output)
@@ -121,6 +125,23 @@ class PluginMenuTests(unittest.TestCase):
         self.assertIn("openclaw_gateway", service_ids)
         self.assertIn("hermes_gateway", service_ids)
         self.assertIn("clogwork", service_ids)
+        self.assertIn("aw_screentime_import", service_ids)
+        self.assertIn("apple_health_export", service_ids)
+
+    def test_recent_service_artifact_counts_as_running_for_periodic_jobs(self):
+        plugin = load_plugin()
+        service = {
+            "recent_paths": ["/tmp/xbar-screen-time-stamp"],
+            "recent_max_age": 6 * 3600,
+        }
+
+        with mock.patch.object(plugin.time, "time", return_value=30000):
+            with mock.patch.object(plugin.os.path, "getmtime", return_value=29900):
+                self.assertTrue(plugin.service_running(service))
+
+        with mock.patch.object(plugin.time, "time", return_value=30000):
+            with mock.patch.object(plugin.os.path, "getmtime", return_value=1):
+                self.assertFalse(plugin.service_running(service))
 
     def test_app_services_are_stopped_before_restart(self):
         source = SCRIPT.read_text()

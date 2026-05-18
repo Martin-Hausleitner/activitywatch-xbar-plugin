@@ -98,6 +98,30 @@ LOCAL_SERVICES = [
         "plist": os.path.expanduser("~/Library/LaunchAgents/eu.hausleitner.clogwork.plist"),
         "href": "http://localhost:8766/",
     },
+    {
+        "id": "aw_screentime_import",
+        "label": "iOS Bildschirmzeit Import",
+        "launch_agent": "ai.servas.aw-screentime-hourly",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/ai.servas.aw-screentime-hourly.plist"),
+        "recent_paths": [
+            os.path.expanduser("~/Library/Logs/aw-activitywatch-stack/screentime.out.log"),
+            os.path.expanduser(
+                "~/Library/Application Support/aw-activitywatch-stack/screentime-imported-files.txt"
+            ),
+        ],
+        "recent_max_age": 6 * 3600,
+    },
+    {
+        "id": "apple_health_export",
+        "label": "Apple Health Export",
+        "launch_agent": "com.mh.apple-health-onedrive-sync",
+        "plist": os.path.expanduser("~/Library/LaunchAgents/com.mh.apple-health-onedrive-sync.plist"),
+        "recent_paths": [
+            os.path.expanduser("~/Library/Logs/apple-health-onedrive-sync.log"),
+            os.path.expanduser("~/Library/Logs/apple-health-onedrive-sync.launchd.log"),
+        ],
+        "recent_max_age": 30 * 3600,
+    },
 ]
 
 
@@ -198,6 +222,17 @@ def json_status_ok(url, ok_key="ok"):
     return data.get(ok_key) is True
 
 
+def recent_path_updated(paths, max_age):
+    cutoff = time.time() - max_age
+    for path in paths:
+        try:
+            if os.path.getmtime(path) >= cutoff:
+                return True
+        except OSError:
+            pass
+    return False
+
+
 def service_running(service):
     if service.get("status_url"):
         return json_status_ok(service["status_url"], service.get("status_ok_key", "ok"))
@@ -206,6 +241,10 @@ def service_running(service):
     if any(process_exact_running(name) for name in service.get("processes", [])):
         return True
     if any(process_pattern_running(pattern) for pattern in service.get("process_patterns", [])):
+        return True
+    if service.get("recent_paths") and recent_path_updated(
+        service["recent_paths"], service.get("recent_max_age", 24 * 3600)
+    ):
         return True
     return False
 
@@ -675,7 +714,7 @@ def render_menu(
 def render_error_menu(error):
     script_path = os.path.abspath(__file__)
     lines = [
-        "⚠ offline",
+        "⚠️ offline",
         "---",
         "ActivityWatch nicht erreichbar oder interner Fehler",
         f"Details: {error}",
